@@ -12,7 +12,9 @@ slos:
     description: "99.9% of /v1/check requests return a non-5xx response over 30 days."
     sli:
       events:
-        error_query: sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[{{.window}}]))
+        # "or vector(0)": with no 5xx series yet the error side is empty and
+        # the SLI would show no data instead of 0 errors.
+        error_query: sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[{{.window}}])) or vector(0)
         total_query: sum(rate(http_requests_total{route="/v1/check"}[{{.window}}]))
     alerting:
       name: BurnRateCheckAvailability

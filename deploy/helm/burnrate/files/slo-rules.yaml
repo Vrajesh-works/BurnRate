@@ -8,7 +8,7 @@ groups:
   rules:
   - record: slo:sli_error:ratio_rate5m
     expr: |
-      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[5m])))
+      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[5m])) or vector(0))
       /
       (sum(rate(http_requests_total{route="/v1/check"}[5m])))
     labels:
@@ -20,7 +20,7 @@ groups:
       tier: "1"
   - record: slo:sli_error:ratio_rate30m
     expr: |
-      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[30m])))
+      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[30m])) or vector(0))
       /
       (sum(rate(http_requests_total{route="/v1/check"}[30m])))
     labels:
@@ -32,7 +32,7 @@ groups:
       tier: "1"
   - record: slo:sli_error:ratio_rate1h
     expr: |
-      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[1h])))
+      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[1h])) or vector(0))
       /
       (sum(rate(http_requests_total{route="/v1/check"}[1h])))
     labels:
@@ -44,7 +44,7 @@ groups:
       tier: "1"
   - record: slo:sli_error:ratio_rate2h
     expr: |
-      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[2h])))
+      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[2h])) or vector(0))
       /
       (sum(rate(http_requests_total{route="/v1/check"}[2h])))
     labels:
@@ -56,7 +56,7 @@ groups:
       tier: "1"
   - record: slo:sli_error:ratio_rate6h
     expr: |
-      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[6h])))
+      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[6h])) or vector(0))
       /
       (sum(rate(http_requests_total{route="/v1/check"}[6h])))
     labels:
@@ -68,7 +68,7 @@ groups:
       tier: "1"
   - record: slo:sli_error:ratio_rate1d
     expr: |
-      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[1d])))
+      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[1d])) or vector(0))
       /
       (sum(rate(http_requests_total{route="/v1/check"}[1d])))
     labels:
@@ -80,7 +80,7 @@ groups:
       tier: "1"
   - record: slo:sli_error:ratio_rate3d
     expr: |
-      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[3d])))
+      (sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[3d])) or vector(0))
       /
       (sum(rate(http_requests_total{route="/v1/check"}[3d])))
     labels:
