@@ -1,0 +1,13 @@
+{{- if .Values.dashboard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "burnrate.fullname" . }}-dashboards
+  labels:
+    {{- include "burnrate.labels" . | nindent 4 }}
+    {{- with .Values.dashboard.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  {{- (.Files.Glob "files/dashboards/*.json").AsConfig | nindent 2 }}
+{{- end }}

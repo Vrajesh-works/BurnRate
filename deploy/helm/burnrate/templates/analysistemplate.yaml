@@ -1,0 +1,26 @@
+{{- if .Values.rollout.enabled }}
+{{- $pods := printf "%s-{{args.canary-hash}}-.*" (include "burnrate.fullname" .) }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "burnrate.fullname" . }}-error-ratio
+  labels:
+    {{- include "burnrate.labels" . | nindent 4 }}
+spec:
+  args:
+    - name: canary-hash
+  metrics:
+    - name: canary-5xx-ratio
+      interval: {{ .Values.rollout.analysis.interval }}
+      initialDelay: {{ .Values.rollout.analysis.initialDelay }}
+      failureLimit: {{ .Values.rollout.analysis.failureLimit }}
+      # No traffic yet (empty result or 0/0) counts as healthy.
+      successCondition: len(result) == 0 || isNaN(result[0]) || result[0] <= {{ .Values.rollout.analysis.maxErrorRatio }}
+      provider:
+        prometheus:
+          address: {{ .Values.rollout.analysis.prometheusAddress }}
+          query: |
+            sum(rate(http_requests_total{route="/v1/check",code=~"5..",pod=~"{{ $pods }}"}[1m]))
+            /
+            sum(rate(http_requests_total{route="/v1/check",pod=~"{{ $pods }}"}[1m]))
+{{- end }}
