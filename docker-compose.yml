@@ -1,0 +1,70 @@
+# One-command local stack without Kubernetes:
+#   docker compose up --build
+# BurnRate on :8080, Prometheus on :9090, Grafana on :3000, Jaeger on :16686.
+# Load test: docker compose --profile load run --rm k6
+name: burnrate
+
+services:
+  burnrate:
+    build:
+      context: .
+      args:
+        VERSION: compose
+    ports: ["8080:8080"]
+    environment:
+      LOG_LEVEL: info
+      DEFAULT_CAPACITY: "100"
+      DEFAULT_REFILL_PER_SECOND: "50"
+      TENANT_POLICIES: '{"acme":{"capacity":500,"refill_per_second":200}}'
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      FAULT_ERROR_RATE: ${FAULT_ERROR_RATE:-0}
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    depends_on: [otel-collector]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.165.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./deploy/compose/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    depends_on: [jaeger]
+
+  jaeger:
+    image: jaegertracing/jaeger:2.23.0
+    ports: ["16686:16686"]
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+    ports: ["9090:9090"]
+    volumes:
+      - ./deploy/compose/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Same sloth-generated rules the Helm chart ships as a PrometheusRule.
+      - ./deploy/helm/burnrate/files/slo-rules.yaml:/etc/prometheus/rules/slo-rules.yaml:ro
+
+  grafana:
+    image: grafana/grafana:13.3.0
+    ports: ["3000:3000"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./deploy/compose/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/helm/burnrate/files/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [prometheus]
+
+  k6:
+    image: grafana/k6:2.3.0
+    profiles: [load]
+    command: ["run", "/scripts/check.js"]
+    environment:
+      BASE_URL: http://burnrate:8080
+      PEAK_RPS: ${PEAK_RPS:-300}
+      HOLD: ${HOLD:-1m}
+    volumes:
+      - ./loadtest:/scripts:ro
+    depends_on: [burnrate]
