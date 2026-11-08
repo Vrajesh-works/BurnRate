@@ -2,12 +2,15 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Vrajesh-works/BurnRate/internal/limiter"
 )
 
 // Config holds every runtime setting.
@@ -16,6 +19,9 @@ type Config struct {
 	LogLevel        slog.Level
 	DefaultCapacity float64
 	DefaultRefill   float64
+	// TenantPolicies are static per-tenant overrides shared by every
+	// replica, from TENANT_POLICIES as JSON: {"acme":{"capacity":500,"refill_per_second":200}}.
+	TenantPolicies  map[string]limiter.Policy
 	BucketIdleTTL   time.Duration
 	DrainDelay      time.Duration
 	ShutdownTimeout time.Duration
@@ -41,6 +47,18 @@ func Load(getenv func(string) string) (Config, error) {
 		ShutdownTimeout: p.duration("SHUTDOWN_TIMEOUT", 15*time.Second),
 		FaultErrorRate:  p.float("FAULT_ERROR_RATE", 0),
 		FaultLatency:    p.duration("FAULT_LATENCY", 0),
+	}
+	if raw := getenv("TENANT_POLICIES"); raw != "" {
+		dec := json.NewDecoder(strings.NewReader(raw))
+		dec.DisallowUnknownFields()
+		if err := dec.Decode(&c.TenantPolicies); err != nil {
+			p.errs = append(p.errs, fmt.Sprintf("TENANT_POLICIES: %v", err))
+		}
+		for tenant, pol := range c.TenantPolicies {
+			if err := pol.Validate(); err != nil {
+				p.errs = append(p.errs, fmt.Sprintf("TENANT_POLICIES[%s]: %v", tenant, err))
+			}
+		}
 	}
 	switch strings.ToLower(getenv("LOG_LEVEL")) {
 	case "", "info":

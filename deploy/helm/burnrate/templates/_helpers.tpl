@@ -80,6 +80,10 @@ spec:
           value: {{ .Values.config.defaultCapacity | quote }}
         - name: DEFAULT_REFILL_PER_SECOND
           value: {{ .Values.config.defaultRefillPerSecond | quote }}
+        {{- with .Values.config.tenantPolicies }}
+        - name: TENANT_POLICIES
+          value: {{ toJson . | quote }}
+        {{- end }}
         - name: BUCKET_IDLE_TTL
           value: {{ .Values.config.bucketIdleTTL | quote }}
         - name: SHUTDOWN_DRAIN_DELAY

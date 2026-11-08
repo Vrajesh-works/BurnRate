@@ -54,6 +54,11 @@ func run(ctx context.Context, getenv func(string) string, ln net.Listener) error
 	if err != nil {
 		return fmt.Errorf("default policy: %w", err)
 	}
+	for tenant, p := range cfg.TenantPolicies {
+		if err := policies.Set(tenant, p); err != nil {
+			return fmt.Errorf("tenant policy %s: %w", tenant, err)
+		}
+	}
 	lim := limiter.New(limiter.NewMemoryStore(), policies, nil)
 	metrics := api.NewMetrics(version, func() float64 { return float64(lim.ActiveBuckets()) })
 	srv := api.NewServer(lim, log, metrics, api.Faults{ErrorRate: cfg.FaultErrorRate, Latency: cfg.FaultLatency})

@@ -27,6 +27,10 @@ config:
   logLevel: info
   defaultCapacity: 100
   defaultRefillPerSecond: 50
+  # Static per-tenant policies shared by every replica. Runtime PUTs to
+  # /v1/policies only change the replica that receives them.
+  tenantPolicies: {}
+  #  acme: {capacity: 500, refill_per_second: 200}
   bucketIdleTTL: 10m
   shutdownDrainDelay: 5s
   shutdownTimeout: 15s

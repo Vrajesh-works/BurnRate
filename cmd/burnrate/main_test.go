@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -21,7 +22,11 @@ func TestRunServesAndShutsDownGracefully(t *testing.T) {
 	// No keep-alives: http.Server.Shutdown treats a connection that is still
 	// in StateNew as active for up to 5s, which made this test flaky.
 	client := &http.Client{Timeout: 2 * time.Second, Transport: &http.Transport{DisableKeepAlives: true}}
-	env := map[string]string{"SHUTDOWN_DRAIN_DELAY": "300ms", "DEFAULT_CAPACITY": "3"}
+	env := map[string]string{
+		"SHUTDOWN_DRAIN_DELAY": "300ms",
+		"DEFAULT_CAPACITY":     "3",
+		"TENANT_POLICIES":      `{"vip":{"capacity":50,"refill_per_second":5}}`,
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
@@ -43,6 +48,16 @@ func TestRunServesAndShutsDownGracefully(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK || resp.Header.Get("RateLimit-Limit") != "3" {
 		t.Fatalf("check status=%d limit=%q", resp.StatusCode, resp.Header.Get("RateLimit-Limit"))
+	}
+
+	resp, err = client.Get(base + "/v1/policies/vip")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if !strings.Contains(string(body), `"capacity":50`) || !strings.Contains(string(body), `"source":"override"`) {
+		t.Fatalf("static tenant policy not loaded: %s", body)
 	}
 
 	cancel()

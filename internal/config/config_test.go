@@ -49,3 +49,20 @@ func TestInvalidValuesAreAllReported(t *testing.T) {
 		}
 	}
 }
+
+func TestTenantPolicies(t *testing.T) {
+	c, err := Load(env(map[string]string{
+		"TENANT_POLICIES": `{"acme":{"capacity":500,"refill_per_second":200}}`,
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := c.TenantPolicies["acme"]; p.Capacity != 500 || p.RefillPerSecond != 200 {
+		t.Fatalf("got %+v", c.TenantPolicies)
+	}
+	for _, bad := range []string{`{`, `{"acme":{"capacity":0,"refill_per_second":1}}`, `{"acme":{"burst":1}}`} {
+		if _, err := Load(env(map[string]string{"TENANT_POLICIES": bad})); err == nil || !strings.Contains(err.Error(), "TENANT_POLICIES") {
+			t.Errorf("TENANT_POLICIES=%s: err=%v, want TENANT_POLICIES error", bad, err)
+		}
+	}
+}
