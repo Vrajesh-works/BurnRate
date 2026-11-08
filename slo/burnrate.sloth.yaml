@@ -1,0 +1,55 @@
+# SLO specs for the BurnRate check endpoint, in sloth's prometheus/v1 format.
+# Regenerate the Prometheus rules with `make slo`; CI fails if the committed
+# output in deploy/helm/burnrate/files/slo-rules.yaml drifts from this file.
+version: "prometheus/v1"
+service: "burnrate"
+labels:
+  owner: "platform"
+  tier: "1"
+slos:
+  - name: "check-availability"
+    objective: 99.9
+    description: "99.9% of /v1/check requests return a non-5xx response over 30 days."
+    sli:
+      events:
+        error_query: sum(rate(http_requests_total{route="/v1/check",code=~"5.."}[{{.window}}]))
+        total_query: sum(rate(http_requests_total{route="/v1/check"}[{{.window}}]))
+    alerting:
+      name: BurnRateCheckAvailability
+      labels:
+        category: "availability"
+      annotations:
+        summary: "BurnRate /v1/check is burning its availability error budget too fast."
+        runbook: "https://github.com/Vrajesh-works/BurnRate/blob/main/docs/RUNBOOK.md#availability"
+      page_alert:
+        labels:
+          severity: "page"
+      ticket_alert:
+        labels:
+          severity: "ticket"
+
+  - name: "check-latency"
+    objective: 99
+    description: "99% of /v1/check requests complete in under 100 ms over 30 days (p99 < 100 ms)."
+    sli:
+      events:
+        error_query: |
+          (
+            sum(rate(http_request_duration_seconds_count{route="/v1/check"}[{{.window}}]))
+            -
+            sum(rate(http_request_duration_seconds_bucket{route="/v1/check",le="0.1"}[{{.window}}]))
+          )
+        total_query: sum(rate(http_request_duration_seconds_count{route="/v1/check"}[{{.window}}]))
+    alerting:
+      name: BurnRateCheckLatency
+      labels:
+        category: "latency"
+      annotations:
+        summary: "BurnRate /v1/check p99 latency is burning its error budget too fast."
+        runbook: "https://github.com/Vrajesh-works/BurnRate/blob/main/docs/RUNBOOK.md#latency"
+      page_alert:
+        labels:
+          severity: "page"
+      ticket_alert:
+        labels:
+          severity: "ticket"
