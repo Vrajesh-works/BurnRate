@@ -37,7 +37,7 @@ func TestRunServesAndShutsDownGracefully(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return resp.StatusCode == http.StatusOK
 	})
 
@@ -45,7 +45,7 @@ func TestRunServesAndShutsDownGracefully(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK || resp.Header.Get("RateLimit-Limit") != "3" {
 		t.Fatalf("check status=%d limit=%q", resp.StatusCode, resp.Header.Get("RateLimit-Limit"))
 	}
@@ -103,12 +103,12 @@ func TestHealthcheck(t *testing.T) {
 		}
 	})}
 	go func() { _ = srv.Serve(ln) }()
-	defer srv.Close()
+	defer func() { _ = srv.Close() }()
 	port := strconv.Itoa(ln.Addr().(*net.TCPAddr).Port)
 	if got := healthcheck(port); got != 0 {
 		t.Fatalf("healthcheck=%d want 0", got)
 	}
-	srv.Close()
+	_ = srv.Close()
 	if got := healthcheck(port); got != 1 {
 		t.Fatalf("healthcheck on closed port=%d want 1", got)
 	}
