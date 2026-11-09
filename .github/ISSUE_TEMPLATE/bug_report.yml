@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in BurnRate does not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include the command or request you ran and the output you got.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. make up
+        2. curl -X POST localhost:8080/v1/check -d '{"tenant":"acme","key":"k"}'
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+  - type: dropdown
+    id: env
+    attributes:
+      label: Where
+      options: [kind (make up), Docker Compose, go run, CI]

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: burnrate
+description: BurnRate rate-limit decision service with SLOs, autoscaling and canary releases
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords: [rate-limiter, slo, argo-rollouts, prometheus]
+home: https://github.com/Vrajesh-works/BurnRate
+sources:
+  - https://github.com/Vrajesh-works/BurnRate

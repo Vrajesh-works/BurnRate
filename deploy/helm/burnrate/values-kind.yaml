@@ -1,0 +1,15 @@
+# Values for the full local stack on kind (scripts/kind-up.sh and Argo CD).
+image:
+  repository: burnrate
+  tag: "0.1.0"
+  pullPolicy: Never
+serviceMonitor:
+  enabled: true
+slo:
+  enabled: true
+dashboard:
+  enabled: true
+otel:
+  endpoint: http://otel-collector.monitoring:4318
+rollout:
+  enabled: true

@@ -1,0 +1,32 @@
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "burnrate.fullname" . }}
+  labels:
+    {{- include "burnrate.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "burnrate.selectorLabels" . | nindent 6 }}
+  template:
+    {{- include "burnrate.podTemplate" . | nindent 4 }}
+  strategy:
+    canary:
+      # Background analysis watches the canary pods from the first step and
+      # aborts the rollout (scaling the canary to zero) if it fails.
+      analysis:
+        templates:
+          - templateName: {{ include "burnrate.fullname" . }}-error-ratio
+        startingStep: 1
+        args:
+          - name: canary-hash
+            valueFrom:
+              podTemplateHashValue: Latest
+      steps:
+        {{- toYaml .Values.rollout.steps | nindent 8 }}
+{{- end }}

@@ -1,0 +1,161 @@
+# Default values for the burnrate chart.
+
+image:
+  repository: burnrate
+  # Defaults to the chart appVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+# Service settings passed as environment variables (see internal/config).
+config:
+  logLevel: info
+  defaultCapacity: 100
+  defaultRefillPerSecond: 50
+  # Static per-tenant policies shared by every replica. Runtime PUTs to
+  # /v1/policies only change the replica that receives them.
+  tenantPolicies: {}
+  #  acme: {capacity: 500, refill_per_second: 200}
+  bucketIdleTTL: 10m
+  shutdownDrainDelay: 5s
+  shutdownTimeout: 15s
+  # Fault injection for demos only: share of /v1/check calls that return 500.
+  faultErrorRate: "0"
+  faultLatency: "0s"
+
+# OTLP/HTTP endpoint for traces, for example http://otel-collector.monitoring:4318.
+# Empty disables trace export.
+otel:
+  endpoint: ""
+
+extraEnv: []
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 500m
+    memory: 128Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+terminationGracePeriodSeconds: 30
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: http
+  periodSeconds: 2
+  timeoutSeconds: 2
+  failureThreshold: 2
+
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  periodSeconds: 1
+  failureThreshold: 30
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+  # Scale up fast, scale down slowly to avoid flapping during load tests.
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 120
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Requires the Prometheus Operator CRDs (kube-prometheus-stack).
+serviceMonitor:
+  enabled: false
+  interval: 15s
+  labels: {}
+
+# PrometheusRule with sloth-generated multi-window multi-burn-rate rules.
+slo:
+  enabled: false
+  labels: {}
+
+# ConfigMap picked up by the Grafana dashboard sidecar.
+dashboard:
+  enabled: false
+  labels:
+    grafana_dashboard: "1"
+
+# Argo Rollouts canary instead of a plain Deployment. Requires the Argo
+# Rollouts CRDs and controller.
+rollout:
+  enabled: false
+  steps:
+    - setWeight: 25
+    - pause: {duration: 30s}
+    - setWeight: 50
+    - pause: {duration: 30s}
+    - setWeight: 100
+  analysis:
+    # Prometheus server URL the AnalysisTemplate queries.
+    prometheusAddress: http://kube-prometheus-stack-prometheus.monitoring:9090
+    interval: 30s
+    # Abort when more than this share of canary /v1/check calls fail.
+    maxErrorRatio: 0.05
+    failureLimit: 1
+    initialDelay: 30s

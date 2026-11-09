@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: burnrate
+    folder: BurnRate
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

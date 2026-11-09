@@ -1,0 +1,9 @@
+# Local cluster: one control plane and two workers so the PDB, topology spread
+# and pod-kill chaos test have somewhere to move pods.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: burnrate
+nodes:
+  - role: control-plane
+  - role: worker
+  - role: worker

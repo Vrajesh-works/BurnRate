@@ -1,0 +1,10 @@
+# Git repo and revision every child app tracks. The root app overrides these.
+repoURL: https://github.com/Vrajesh-works/BurnRate.git
+revision: main
+
+# Keep in sync with deploy/kind/versions.env.
+versions:
+  kubePrometheusStack: 93.1.0
+  argoRollouts: 2.43.11
+  metricsServer: 3.14.0
+  otelCollector: 0.178.2

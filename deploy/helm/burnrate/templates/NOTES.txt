@@ -1,0 +1,5 @@
+BurnRate {{ include "burnrate.imageTag" . }} is installed as {{ if .Values.rollout.enabled }}an Argo Rollout{{ else }}a Deployment{{ end }}.
+
+Try it:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "burnrate.fullname" . }} 8080:{{ .Values.service.port }}
+  curl -s -X POST localhost:8080/v1/check -d '{"tenant":"acme","key":"card-auth"}'
