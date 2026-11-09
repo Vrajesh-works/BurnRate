@@ -55,7 +55,7 @@ func TestRunServesAndShutsDownGracefully(t *testing.T) {
 		t.Fatal(err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if !strings.Contains(string(body), `"capacity":50`) || !strings.Contains(string(body), `"source":"override"`) {
 		t.Fatalf("static tenant policy not loaded: %s", body)
 	}
@@ -66,7 +66,7 @@ func TestRunServesAndShutsDownGracefully(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return resp.StatusCode == http.StatusServiceUnavailable
 	})
 
