@@ -130,6 +130,18 @@ request and push to `main`:
 | Image build and Trivy scan | distroless image builds, runs as UID 65532, no fixable HIGH/CRITICAL CVEs; Trivy config scan of the chart |
 | kind e2e | helm/kind-action cluster, chart install with metrics-server, `helm test`, smoke script, graceful and SIGKILL pod-kill with recovery time in the job summary |
 
+### Measured pod-kill recovery
+
+From the kind e2e job on the first PR (3-node kind cluster, 2 replicas, an
+in-cluster probe calling `POST /v1/check` every 50 ms through the Service):
+
+| Experiment | Recovery (Ready count back to 2) | Probe requests | Probe failures |
+| --- | --- | --- | --- |
+| Graceful delete (SIGTERM, drain) | 2.31 s | 146 | 0 |
+| `--grace-period=0 --force` (SIGKILL) | 1.34 s | 141 | 0 |
+
+Each run writes its numbers to `chaos-results/*.json` and the CI job summary.
+
 ## Design notes
 
 **Token bucket, not sliding window.** Payment gateways want bursts (a merchant's
@@ -221,6 +233,16 @@ shows SLI, remaining budget and burn rate per window; the
   work-in-progress `kind-up.sh` referenced `chart_images` before it was written.
   Fix: added it to `scripts/lib.sh` and checked it against the pinned charts;
   CI's kind job now exercises the script on every PR.
+- **Trivy blocked the image on its first CI run.** The binary was built with
+  `golang.org/x/net` v0.59.0, which has two fixable HIGH denial-of-service CVEs
+  (CVE-2026-78661 in `x/net/html`, CVE-2026-78669 in HTTP/2 SETTINGS handling).
+  Fix: bumped to v0.62.0. The gate is set to fail only on fixable HIGH and
+  CRITICAL findings, so it stays actionable; Dependabot keeps modules current.
+- **golangci-lint failed on unchecked `Close` errors.** `go vet` was clean
+  locally, but errcheck flagged `resp.Body.Close()` and `srv.Close()` in the
+  entrypoint and its tests, and only showed three at a time (its default
+  per-issue cap) so the fix took two rounds. Fix: explicit `_ =` discards, and
+  `golangci-lint run` locally before pushing.
 
 ## Roadmap and future work
 
