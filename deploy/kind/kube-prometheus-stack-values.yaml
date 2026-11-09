@@ -1,0 +1,40 @@
+# Trimmed kube-prometheus-stack for a laptop-sized kind cluster.
+fullnameOverride: kube-prometheus-stack
+prometheus:
+  prometheusSpec:
+    # Pick up ServiceMonitors and PrometheusRules from every namespace,
+    # not only those labelled for this release.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    retention: 2d
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+grafana:
+  adminPassword: burnrate
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL
+  service:
+    type: ClusterIP
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+# Control-plane components on kind are not reachable on the default ports.
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
