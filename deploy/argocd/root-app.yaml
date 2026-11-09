@@ -1,0 +1,27 @@
+# App-of-apps root. Argo CD renders deploy/argocd/apps (a small Helm chart of
+# Application objects) from this repo and keeps every child app in sync.
+# scripts/gitops-up.sh applies this file and can override targetRevision.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: burnrate-root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Vrajesh-works/BurnRate.git
+    targetRevision: main
+    path: deploy/argocd/apps
+    helm:
+      valuesObject:
+        repoURL: https://github.com/Vrajesh-works/BurnRate.git
+        revision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
